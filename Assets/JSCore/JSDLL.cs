@@ -1,4 +1,4 @@
-﻿#define _64_BIT_
+﻿//#define _64_BIT_
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -39,6 +39,8 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
 
 #if !UNITY_EDITOR && UNITY_IPHONE
         const string JSCDLL = "__Internal";
+#elif !UNITY_EDITOR && UNITY_ANDROID
+        const string JSCDLL = "jsc";//"android-jsc";
 #else
         const string JSCDLL = "JavaScriptCore";
 #endif
@@ -52,7 +54,7 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
         /** JSObjectRef */
         //JSClassRef JSClassCreate(const JSClassDefinition* definition);
         [DLLIMPORT(JSCDLL, CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
-        public static extern INTPTR JSClassCreate(JSClassDefinition definition);
+        public static extern INTPTR JSClassCreate(ref JSClassDefinition definition);
 
         // JSClassRef JSClassRetain(JSClassRef jsClass);
         [DLLIMPORT(JSCDLL, CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
@@ -196,12 +198,15 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
         [DLLIMPORT(JSCDLL, CallingConvention = System.Runtime.InteropServices.CallingConvention.Cdecl)]
         public static extern void JSGarbageCollect(INTPTR ctx);
 
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
         public struct JSClassDefinition
         {
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I4)]
             public int version;
-            public JSClassAttributes attributes;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I4)]
+            public int attributes;
             //public INTPTR className;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)]
             public string className;
             //JSClassRef parentClass;
             public INTPTR parentClass;
@@ -210,27 +215,69 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
             //const JSStaticFunction* staticFunctions;
             public INTPTR staticFunctions;
             //JSObjectInitializeCallback initialize;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectInitializeCallback initialize;
             //JSObjectFinalizeCallback finalize;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectFinalizeCallback finalize;
             //JSObjectHasPropertyCallback hasProperty;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectHasPropertyCallback hasProperty;
             //JSObjectGetPropertyCallback getProperty;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectGetPropertyCallback getProprety;
             //JSObjectSetPropertyCallback setProperty;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectSetPropertyCallback setProperty;
             //JSObjectDeletePropertyCallback deleteProperty;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectDeletePropertyCallback deleteProperty;
             //JSObjectGetPropertyNamesCallback getPropertyNames;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectGetPropertyNamesCallback getPropertyNames;
             //JSObjectCallAsFunctionCallback callAsFunction;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectCallAsFunctionCallback callAsFunction;
             //JSObjectCallAsConstructorCallback callAsConstructor;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectCallAsConstructorCallback callAsConstructor;
             //JSObjectHasInstanceCallback hasInstance;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectHasInstanceCallback hasInstance;
             //JSObjectConvertToTypeCallback convertToType;
+            //[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.FunctionPtr)]
             public JSObjectConvertToTypeCallback convertToType;
+
+            public JSClassAttributes Attributes
+            {
+                get
+                {
+                    return (JSClassAttributes)attributes;
+                }
+                set
+                {
+                    attributes = (int)value;
+                }
+            }
+
+            public string ClassName
+            {
+                get
+                {
+                    return className;
+                    //int len = JSStringGetLength(className);
+                    //UnityEngine.Debug.Log(" len:" + len);
+                    //var str = M.PtrToStringUni(JSStringGetCharactersPtr(className), len);
+                    //UnityEngine.Debug.Log("get className:" + str);
+                    //return str;
+
+                }
+                set
+                {
+                    UnityEngine.Debug.Log("set className:" + value);
+                    className = value; //JSStringCreateWithUTF8CString(value);
+                }
+            }
         }
 
         //void (*JSObjectInitializeCallback) (JSContextRef ctx, JSObjectRef object);
@@ -288,6 +335,7 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
             kJSTypeObject = 5
         }
 
+      
         public enum JSClassAttributes
         {
             kJSClassAttributeNone = 0,
@@ -306,7 +354,7 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct JSStaticValue
         {
-            string name;
+            INTPTR name;
             JSObjectGetPropertyCallback getProperty;
             JSObjectSetPropertyCallback setProperty;
             JSPropertyAttributes attributes;
@@ -315,7 +363,7 @@ using UFP = System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute;
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct JSStaticFunction
         {
-            string name;
+            INTPTR name;
             JSObjectCallAsFunctionCallback callAsFunction;
             JSPropertyAttributes attributes;
         }

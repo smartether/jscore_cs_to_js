@@ -22,18 +22,18 @@ using INT = System.Int64;
         {
             JSDLL.JSClassDefinition def = new JSDLL.JSClassDefinition()
             {
-                attributes = JSDLL.JSClassAttributes.kJSClassAttributeNone,
-                className = name,
+                Attributes = JSDLL.JSClassAttributes.kJSClassAttributeNone,
+                ClassName = name,
                  
             };
-            var clz = JSDLL.JSClassCreate(def);
+            var clz = JSDLL.JSClassCreate(ref def);
             JSClass jsClz = new JSClass(clz);
             return jsClz;
         }
 
         public JSClass JSClassCreate(JSDLL.JSClassDefinition def)
         {
-            var clz = JSDLL.JSClassCreate(def);
+            var clz = JSDLL.JSClassCreate(ref def);
             JSClass jsClz = new JSClass(clz);
             return jsClz;
         }

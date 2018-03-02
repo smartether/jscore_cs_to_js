@@ -1,4 +1,4 @@
-﻿#define _64_BIT_
+﻿//#define _64_BIT_
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -49,32 +49,26 @@ public class ToJS : MonoBehaviour {
 
     ~ToJS()
     {
-        M.FreeHGlobal(lastException);
+        
     }
 
     JSDLL.JSClassDefinition DefaultClz = new JSDLL.JSClassDefinition()
     {
-        attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
-        className = "DefaultClz"
+        Attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
+        ClassName = "DefaultClz"
     };
 
     static Dictionary<int, object> cachedObject = new Dictionary<int, object>();
 
     public ToJS()
     {
-        JSDLL.JSClassDefinition GlobalContextClz = new JSDLL.JSClassDefinition()
-        {
-            attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
-            className = "GlobalContext"
-        };
-        
-        INTPTR clz = JSDLL.JSClassCreate(GlobalContextClz);
-        gtx = JSDLL.JSGlobalContextCreate(clz);
+
     }
 
 
     public void PrintLastException(INTPTR ctx)
     {
+        return;
         INTPTR p = M.ReadIntPtr(lastException);
         if (p != INTPTR.Zero)
         {
@@ -111,15 +105,15 @@ public class ToJS : MonoBehaviour {
 
         JSDLL.JSClassDefinition CommonClass = new JSDLL.JSClassDefinition()
         {
-            attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
-            className = "CommonClass"
+            Attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
+            ClassName = "CommonClass"
         };
 
         System.Type type = typeof(UnityEngine.GameObject);
         INTPTR clz = INTPTR.Zero;
 
         var nodes = type.FullName.Split('.');
-        CommonClass.className = nodes[nodes.Length - 1];
+        CommonClass.ClassName = nodes[nodes.Length - 1];
 
         INTPTR obj = gobj;
         for (int i = 0, count = nodes.Length; i < count - 1; i++)
@@ -130,7 +124,7 @@ public class ToJS : MonoBehaviour {
             hasProperty = JSDLL.JSObjectHasProperty(gtx, obj, propertyNamePtr);
             if (!hasProperty)
             {
-                var o = JSDLL.JSObjectMake(gtx, JSDLL.JSClassCreate(DefaultClz), INTPTR.Zero);
+                var o = JSDLL.JSObjectMake(gtx, JSDLL.JSClassCreate(ref DefaultClz), INTPTR.Zero);
                 JSDLL.JSObjectSetProperty(gtx, obj, propertyNamePtr, o, JSDLL.JSPropertyAttributes.kJSPropertyAttributeNone, lastException);
                 obj = o;
             }
@@ -150,14 +144,15 @@ public class ToJS : MonoBehaviour {
                 CommonClass.callAsConstructor = delegate (INTPTR ctx, INTPTR constructor, INT argumentCount, INTPTR arguments, INTPTR exception)
                 {
                     print("Constructor fun called...");
-
+                    logHandle.text.text = "Constructor fun called...";
                     //c.Invoke(new object[] { M.PtrToStringAuto(JSStringGetCharactersPtr(arguments)) });
                     var arg = M.ReadIntPtr(arguments, 0);
                     var jsStr = JSDLL.JSValueToStringCopy(gtx, arg, lastException);
                     var jsStrLen = JSDLL.JSStringGetLength(jsStr);
                     var charPtr = JSDLL.JSStringGetCharactersPtr(jsStr);
-                    string gName = M.PtrToStringAuto(charPtr, jsStrLen);
+                    string gName = M.PtrToStringUni(charPtr, jsStrLen);
                     print(gName);
+                    logHandle.text1.text = gName;
                     var go = new GameObject(gName);
 
 
@@ -177,6 +172,7 @@ public class ToJS : MonoBehaviour {
 
                     JSDLL.JSObjectSetProperty(gtx, o, JSDLL.JSStringCreateWithUTF8CString("TargetRefId"), goValue, JSDLL.JSPropertyAttributes.kJSPropertyAttributeNone, lastException);
                     print(o.ToInt32());
+                    logHandle.text2.text = o.ToInt32().ToString();
                     //print(goPtr.ToInt32());
                     return o;
                 };
@@ -193,14 +189,14 @@ public class ToJS : MonoBehaviour {
 
         bindedDef[type] = CommonClass;
 
-        clz = JSDLL.JSClassCreate(CommonClass);
+        clz = JSDLL.JSClassCreate(ref CommonClass);
 
         bindedClaz[type] = clz;
 
         var obj1 = JSDLL.JSObjectMake(gtx, clz, INTPTR.Zero);
         JSDLL.JSValueProtect(gtx, obj1);
 
-        JSDLL.JSObjectSetProperty(gtx, obj, JSDLL.JSStringCreateWithUTF8CString(CommonClass.className), obj1, JSDLL.JSPropertyAttributes.kJSPropertyAttributeReadOnly, lastException);
+        JSDLL.JSObjectSetProperty(gtx, obj, JSDLL.JSStringCreateWithUTF8CString(CommonClass.ClassName), obj1, JSDLL.JSPropertyAttributes.kJSPropertyAttributeReadOnly, lastException);
 
         JSDLL.JSValueUnprotect(gtx, obj1);
 
@@ -211,7 +207,9 @@ public class ToJS : MonoBehaviour {
             //var err = JSObjectMakeError(gtx, 1, new INTPTR[1] { jsErrStr }, lastException);
             //M.WriteIntPtr(exception, err);
             var res = JSDLL.JSValueMakeString(gtx, JSDLL.JSStringCreateWithUTF8CString("hello"));
-            print("Function fun called...");
+            string txt = "Function fun called...";
+            print(txt);
+            logHandle.text.text = txt;
             return res;
         });
 
@@ -233,8 +231,10 @@ public class ToJS : MonoBehaviour {
                     }
                     //var targetRefId = JSObjectGetProperty(gtx, o, JSStringCreateWithUTF8CString("TargetRefId"), lastException);
                     //var targetGcHandle = System.Runtime.InteropServices.GCHandle.FromIntPtr(targetRefId);
-                    //var go = targetGcHandle.Target as GameObject;
-                    print("go Name:" + go.name);
+                    //var go = targetGcHandle.Target as GameObject;\
+                    string txt = "go Name:" + go.name;
+                    print(txt);
+                    logHandle.text1.text = txt;
                 }
             }
             return INTPTR.Zero;
@@ -257,9 +257,37 @@ public class ToJS : MonoBehaviour {
 
     }
 
+    LogHandle logHandle = null;
+
+    void Awake()
+    {
+        JSDLL.JSClassDefinition GlobalContextClz = new JSDLL.JSClassDefinition()
+        {
+            Attributes = JSDLL.JSClassAttributes.kJSClassAttributeNoAutomaticPrototype,
+            ClassName = "GlobalContext"
+        };
+
+        try
+        {
+            INTPTR clz = JSDLL.JSClassCreate(ref GlobalContextClz);
+            gtx = JSDLL.JSGlobalContextCreate(clz);
+        }catch(System.Exception e)
+        {
+            print(e.ToString());
+        }
+        
+    }
+
+    void Start()
+    {
+        this.BindTypes();
+        this.Test();
+    }
+
     [ContextMenu("Test")]
     public void Test()
     {
+        logHandle = FindObjectOfType<LogHandle>();
         M.WriteIntPtr(lastException, INTPTR.Zero);
         JSDLL.JSEvaluateScript(gtx, JSDLL.JSStringCreateWithUTF8CString("a = new UnityEngine.GameObject('a123');"), INTPTR.Zero, INTPTR.Zero, 0, lastException);
         PrintLastException(gtx);
