@@ -31,16 +31,25 @@ using INT = System.Int64;
             return jsClz;
         }
 
-        public JSClass JSClassCreate(JSDLL.JSClassDefinition def)
+        public INTPTR JSClassCreate(ref JSDLL.JSClassDefinition jsClzDef)
         {
-            var clz = JSDLL.JSClassCreate(ref def);
-            JSClass jsClz = new JSClass(clz);
-            return jsClz;
+            var clz = JSDLL.JSClassCreate(ref jsClzDef);
+            return clz;
         }
 
-        public JSObject JSMakeObject()
+        public INTPTR JSMakeObject(INTPTR clz, INTPTR data)
         {
-            return null;
+            var obj = JSDLL.JSObjectMake(J, clz, data);
+            return obj;
         }
+
+        public INTPTR JSObjectMakeFunctionWithCallback(string name, JSDLL.JSObjectCallAsFunctionCallback cb)
+        {
+            var funPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(cb);
+            INTPTR jsname = JSDLL.JSStringCreateWithUTF8CString(name);
+            var func = JSDLL.JSObjectMakeFunctionWithCallback(J, jsname, cb);
+            return func;
+        }
+
     }
 }

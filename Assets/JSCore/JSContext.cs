@@ -25,5 +25,20 @@ namespace JSInterface
 
         }
 
+        public void RegFunction(string name, JSDLL.JSObjectCallAsFunctionCallback cb)
+        {
+            
+        }
+
+        public void RegVar(string name, JSDLL.JSObjectGetPropertyCallback get, JSDLL.JSObjectSetPropertyCallback set)
+        {
+
+        }
+
+
+        public void Test()
+        {
+
+        }
     }
 }
