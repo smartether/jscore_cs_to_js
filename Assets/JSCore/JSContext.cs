@@ -11,7 +11,7 @@ namespace JSInterface
         /// </summary>
         public void CreateObject()
         {
-
+            
         }
 
         public void Push(JSBaseRef reference)
